@@ -5,6 +5,19 @@ import java.util.*;
 import controlP5.*;
 Serial myPort;
 
+//test sine wave
+int xspacing = 16;   // How far apart should each horizontal location be spaced
+int w;              // Width of entire wave
+
+float theta = 0.0;  // Start angle at 0
+float amplitude = 75.0;  // Height of wave
+float period = 500.0;  // How many pixels before the wave repeats
+float dx;  // Value for incrementing X, a function of period and xspacing
+float[] yvalues = new float[100];  // Using an array to store height values for the wave
+float[] xvalues = new float[100];  // Using an array to store height values for the wave
+
+
+
 //initial global variables
 GUI gui;
 Slider slider;
@@ -12,6 +25,7 @@ Button button;
 DropdownList navList;
 color color1;
 color color2;
+color color3;
 String[] navMenuItems;
 int userAge;
 int maxHeartRate = 220 - userAge;
@@ -27,6 +41,13 @@ int peakTime = 1;
 int cardioTime = 1;
 int fatBurnTime = 1;
 int exerciseTime = peakTime + cardioTime + fatBurnTime;
+//
+// lab 2 sensors
+//
+int forcePressure = 1;
+int heartSensor = 1;
+int[] ecgX;
+int [] ecgY;
 
 ArrayList<Float> heartRateData = new ArrayList<>();
 ArrayList<Float> dynamicArray = new ArrayList<>(); 
@@ -38,9 +59,10 @@ ColourTable cTable1, cTable2, cTable3;
 //ControlP5 cp5;
 
 void setup() {
-  size(800,800);
+  size(1600,800);
   color1 = color(50,50,128);
   color2 = color(50,50,128);
+  color3 = color(255,255,255);
   background(117, 121, 186);
   
   cTable1 = new ColourTable();
@@ -79,6 +101,7 @@ void setup() {
   navList.addItem("Fitness Mode", 0);
   navList.addItem("Stress Monitoring Mode", 1);
   navList.addItem("Meditation Mode", 2);
+  navList.addItem("Custom Mode", 3);
   navList.setOpen(false);
   navList.setCaptionLabel("Select Mode");
   navList.setPosition(20,15).setSize(200,200);
@@ -95,7 +118,13 @@ void setup() {
   heartRateChart.setPointColour(heartColors, cTable1);
   heartRateChart.setLineWidth(1);
   heartRateChart.setPointSize(5);
-
+  heartRateChart.setLineColour(color3);
+  heartRateChart.setPointColour(yvalues, cTable2);
+  heartRateChart.setAxisColour(color3);
+  heartRateChart.setAxisValuesColour(color3);
+  heartRateChart.setXAxisLabel("Minutes");
+  heartRateChart.setYAxisLabel("BPM");
+  heartRateChart.setAxisLabelColour(color3);
 }
 
 void draw() {
@@ -114,18 +143,17 @@ void draw() {
   //
   textAlign(LEFT);
   textSize(18);
-  text("Heart Rate", 20, 400);
+  text("Heart Rate", 20, 200);
   textSize(16);
-  text("Avg BPM: " + (int) avgBPM, 20, 420);
-  text("Highest BPM: " + (int) highestBPM, 160, 420);
+  text("Avg BPM: " + (int) avgBPM, 20, 220);
+  text("Highest BPM: " + (int) highestBPM, 160, 220);
 
   if (restingBPM >= 9999) {
-    text("Resting BPM: Calibrating...", 20, 440); 
+    text("Resting BPM: Calibrating...", 320, 220); 
   } else {
-    text("Resting BPM: " + restingBPM, 320, 420);
+    text("Resting BPM: " + restingBPM, 320, 220);
   }
   
-  updateHeartRate();
   
   float[] floatHeart = new float[heartRateData.size()];
   for (int i = 0; i < heartRateData.size(); i++) {
@@ -138,15 +166,16 @@ void draw() {
     floatArray[i] = (float) intArray[i];
   }
   
-  heartRateChart.setData(floatArray, floatHeart);
+  heartRateChart.setData(yvalues, xvalues);
   
   float[] yVal = new float[dynamicArray.size()];
   for (int k = 0; k < dynamicArray.size(); k++) {
     yVal[k] = dynamicArray.get(k);
   }
-  heartRateChart.setPointColour(yVal, cTable2);
-  fill(color(255,255,255));
-  heartRateChart.draw(50, 450, width - 100, 200);
+  
+  //yVal is the actual array for the heart monitoring chart
+  calcWave();
+  heartRateChart.draw(20, height/3, width/3, 200);
   
   totalTime++;
 
@@ -236,7 +265,18 @@ String formatTime(int seconds) {
   return nf(mins, 2) + ":" + nf(secs, 2) + " mins";
 }
 
+void calcWave() {
+  // Increment theta (try different values for 'angular velocity' here
+  theta += 0.02;
 
+  // For every x value, calculate a y value with sine function
+  float x = theta;
+  for (int i = 0; i < yvalues.length; i++) {
+    yvalues[i] = sin(x)*amplitude;
+    x+=dx;
+    xvalues[i] = dx;
+  }
+}
 
 void controlEvent(ControlEvent theEvent) {
   if (theEvent.isController() && theEvent.getController() == navList) {
@@ -253,6 +293,10 @@ void controlEvent(ControlEvent theEvent) {
       case 2:
         println("Switching to Meditation Mode");
         // Add code to switch to Meditation Mode
+        break;
+      case 3:
+        println("Switching to Custom Mode");
+        // Add code to switch to Custom Mode
         break;
     }
   }
